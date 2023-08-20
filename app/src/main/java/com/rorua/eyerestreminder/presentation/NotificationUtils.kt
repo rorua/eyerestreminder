@@ -9,10 +9,11 @@ import androidx.core.app.NotificationManagerCompat
 
 object NotificationUtils {
 
-    private const val CHANNEL_ID = "EyeRestReminderChannel"
-    private const val CHANNEL_NAME = "Eye Rest Reminder"
-    private const val NOTIFICATION_ID = 1
+    private const val CHANNEL_ID = "EyeRestReminderChannel"     // Идентификатор канала уведомлений
+    private const val CHANNEL_NAME = "Eye Rest Reminder"        // Имя канала уведомлений
+    private const val NOTIFICATION_ID = 1                       // Идентификатор уведомления
 
+    // Создание канала уведомлений (для Android 8.0 и выше)
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -26,19 +27,18 @@ object NotificationUtils {
         }
     }
 
-    fun showNotification(context: Context, contentText: String) {
+    // Показ уведомления
+    fun showNotification(context: Context, contentText:String) {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_warning)
-            .setContentTitle("Eye Rest")
-            .setContentText(contentText)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .setVibrate(longArrayOf(1000, 1000, 1000, 1000, 1000))
-            .setAutoCancel(false)
+            .setContentTitle("Eye Rest")             // Заголовок уведомления
+            .setContentText(contentText)             // Текст уведомления
+            .setPriority(NotificationCompat.PRIORITY_HIGH)  // Приоритет уведомления
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)  // Категория уведомления
+            .setAutoCancel(true)                    // Уведомление закроется при нажатии на него
             .build()
 
         val notificationManager = NotificationManagerCompat.from(context)
-        notificationManager.notify(NOTIFICATION_ID, notification)
+        notificationManager.notify(NOTIFICATION_ID, notification) // Отправка уведомления
     }
 }
-

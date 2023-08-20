@@ -9,107 +9,112 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-
 class EyeRestReminderViewModel(
     private val context: Context,
-    private val notificationUtils: NotificationUtils
 ) : ViewModel() {
 
+    // Объявляем переменные для управления состоянием
+    private lateinit var notificationUtils: NotificationUtils // Утилита для управления уведомлениями
+    private var timerJob: Job? = null // Job для запуска и остановки таймера
 
-
-    private var timerJob: Job? = null
-
-
-    // Переменные для управления состоянием:
-    // Храним состояние отправки уведомлений (включено/выключено)
+    // Переменные состояния, которые будут доступны извне
     private val _sendNotifications = MutableStateFlow(false)
     val sendNotifications: StateFlow<Boolean> = _sendNotifications
 
-    // Храним интервал между уведомлениями (в минутах)
     private val _interval = MutableStateFlow(20)
     val interval: StateFlow<Int> = _interval
 
-    // Храним таймер, отсчитывающий время до следующего уведомления
     private val _timer = MutableStateFlow(20 * 60)
     val timer: StateFlow<Int> = _timer
 
-    // Методы для обновления переменных:
-    // Установка интервала между уведомлениями
+    private val notificationMessages = arrayOf(
+        "Give your eyes a break! Look away from the screen.",
+        "Time for a quick eye rest. Focus on something distant.",
+        "Your eyes need a breather. Blink a few times.",
+        "Take a moment to relax your eyes. Close them gently.",
+        "Give your eyes a break and stretch. Focus on the horizon.",
+        "It's time to rest your eyes. Look around and enjoy the view.",
+        "Let your eyes rest for a while. Look outside and admire nature.",
+        "Pause for a moment and let your eyes rejuvenate. Blink slowly.",
+        "Relax your eyes and breathe. Gaze into the distance for a moment.",
+        "Your eyes deserve a break. Close them softly and unwind.",
+    )
+
+    private val _notificationTimes = MutableStateFlow<List<Long>>(emptyList())
+    val notificationTimes: StateFlow<List<Long>> = _notificationTimes
+
+    // Инициализация
+    init {
+        // Создаем объект notificationUtils с контекстом
+        notificationUtils = NotificationUtils
+    }
+
+    // Метод для запуска таймера, если необходимо
+    fun startTimerIfNeeded() {
+        val intervalValue = interval.value
+        val sendNotificationsValue = sendNotifications.value
+
+        if (sendNotificationsValue && intervalValue > 0) {
+            startTimer(intervalValue)
+        } else {
+            stopTimer()
+        }
+    }
+
+    // Остановка таймера
+    fun stopTimer() {
+        timerJob?.cancel()
+    }
+
+    // Запуск таймера с указанным интервалом
+    private fun startTimer(interval: Int) {
+        stopTimer()
+
+        // Запускаем таймер в корутине
+        timerJob = viewModelScope.launch {
+            while (_timer.value > 0) {
+                delay(1000) // Ждем 1 секунду
+                _timer.value--
+            }
+            // По завершении таймера вызываем уведомление
+            showRestReminderNotification()
+            // Сбрасываем таймер и запускаем его заново, если уведомления включены
+            _timer.value = interval * 60
+            startTimerIfNeeded()
+        }
+    }
+
+    // Показать уведомление о необходимости отдохнуть
+    fun showRestReminderNotification() {
+        val randomIndex = (0 until notificationMessages.size).random()
+        val contentText = notificationMessages[randomIndex]
+        notificationUtils.showNotification(context, contentText)
+
+        val currentTime = System.currentTimeMillis()
+        addNotificationTime(currentTime)
+    }
+
+    // Методы для обновления интервала и включения/выключения уведомлений
     fun setInterval(minutes: Int) {
         _interval.value = minutes
         _timer.value = minutes * 60
     }
 
-    // Включение/выключение отправки уведомлений
     fun setSendNotifications(enabled: Boolean) {
         _sendNotifications.value = enabled
         if (!enabled) {
-            _timer.value = interval.value * 60 // Сбросить таймер на дефолтное значение
+            _timer.value = interval.value * 60
             stopTimer()
         } else {
             startTimerIfNeeded()
         }
     }
 
-
-    // Запуск таймера при необходимости
-    private fun startTimerIfNeeded() {
-        val intervalValue = interval.value
-        val sendNotificationsValue = sendNotifications.value
-
-        if (sendNotificationsValue && intervalValue > 0) {
-            startTimer(intervalValue, ::onTimerTick, ::onTimerFinished)
-        } else {
-            stopTimer()
-        }
+    fun addNotificationTime(time: Long) {
+        val updatedList = _notificationTimes.value.toMutableList()
+        updatedList.add(time)
+        _notificationTimes.value = updatedList
     }
-
-    // Запуск таймера
-    private fun startTimer(interval: Int, onTick: () -> Unit, onFinished: () -> Unit) {
-        stopTimer()
-
-        timerJob = viewModelScope.launch {
-            while (_timer.value > 0) {
-                delay(1000) // Подождать 1 секунду
-                _timer.value--
-                onTick()
-            }
-            onFinished()
-        }
-    }
-
-    // Остановка таймера
-    private fun stopTimer() {
-        timerJob?.cancel()
-    }
-
-    // Действия на каждом тике таймера (каждую секунду)
-    private fun onTimerTick() {
-        // Вызов метода для обновления интерфейса, например, для обновления времени
-        // Например: updateTimerDisplay()
-    }
-
-    // Действия при завершении таймера
-    private fun onTimerFinished() {
-        // В этом месте можно вызвать метод для показа уведомления о необходимости отдохнуть
-        // Например: showRestReminderNotification()
-        showRestReminderNotification()
-        // Также можно сбросить таймер обратно на исходное значение
-        _timer.value = interval.value * 60
-
-        // Запустить таймер снова, если уведомления включены
-        startTimerIfNeeded()
-    }
-
-    // Отправить уведомление о необходимости отдохнуть
-    fun showRestReminderNotification() {
-        notificationUtils.showNotification(
-            context,
-            "Time to rest your eyes!"
-        )
-    }
-
-
 
     // Очистка ресурсов при уничтожении ViewModel
     override fun onCleared() {
@@ -117,6 +122,7 @@ class EyeRestReminderViewModel(
         stopTimer()
     }
 }
+
 
 
 
