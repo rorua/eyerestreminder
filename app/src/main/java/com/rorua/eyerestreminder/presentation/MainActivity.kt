@@ -64,16 +64,18 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        startService(Intent(this, EyeRestReminderService::class.java))
+        //startService(Intent(this, EyeRestReminderService::class.java))
+//        val serviceIntent = Intent(this, EyeRestReminderService::class.java)
+//        startService(serviceIntent);
 
         viewModel = EyeRestReminderViewModel(applicationContext)
+        NotificationUtils.createNotificationChannel(this)
 
         setContent {
             WearApp(viewModel)
         }
     }
 }
-
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable

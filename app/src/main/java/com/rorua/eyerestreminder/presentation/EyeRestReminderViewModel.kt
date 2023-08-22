@@ -116,11 +116,16 @@ class EyeRestReminderViewModel(
         _notificationTimes.value = updatedList
     }
 
-    // Очистка ресурсов при уничтожении ViewModel
-    override fun onCleared() {
-        super.onCleared()
-        stopTimer()
+    // Метод для обновления таймера
+    fun updateTimer(timeInSeconds: Int) {
+        _timer.value = timeInSeconds
     }
+
+    // Очистка ресурсов при уничтожении ViewModel
+//    override fun onCleared() {
+//        super.onCleared()
+//        stopTimer()
+//    }
 }
 
 
